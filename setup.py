@@ -34,6 +34,43 @@ if not os.path.exists(build_temp):
     os.makedirs(build_temp)
 
 
+# ---------------------------------------------------------------------------
+# Patch LVGL headers: comment out declarations that use va_list, which CFFI
+# and pycparser cannot handle.  Applied in-place before parsing; safe to run
+# multiple times (idempotent).
+# ---------------------------------------------------------------------------
+def _patch_va_list_declarations():
+    patches = [
+        (
+            os.path.join(lvgl_path, 'src', 'misc', 'lv_text.h'),
+            'char * _lv_text_set_text_vfmt(const char * fmt, va_list ap)'
+            ' LV_FORMAT_ATTRIBUTE(1, 0);',
+            '// removed: va_list not CFFI-compatible'
+            ' -- char * _lv_text_set_text_vfmt(...)',
+        ),
+        (
+            os.path.join(lvgl_path, 'src', 'stdlib', 'lv_sprintf.h'),
+            'int lv_vsnprintf(char * buffer, size_t count,'
+            ' const char * format, va_list va);',
+            '// removed: va_list not CFFI-compatible'
+            ' -- int lv_vsnprintf(...)',
+        ),
+    ]
+    for path, old, new in patches:
+        if not os.path.exists(path):
+            print(f'[alias patch] WARNING: {path} not found, skipping')
+            continue
+        src = open(path).read()
+        if old in src:
+            open(path, 'w').write(src.replace(old, new))
+            print(f'[alias patch] patched {os.path.basename(path)}')
+        else:
+            print(f'[alias patch] already patched {os.path.basename(path)}')
+
+
+_patch_va_list_declarations()
+
+
 library_dirs = []
 include_dirs = ['.']
 linker_args = []
