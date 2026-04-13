@@ -382,23 +382,23 @@ def {func_name}({params}) -> {ret_type}:{callback_code}
 
     callback_code_user_data_param_template = '''\
     cb_store = _global_cb_store
-    if '{cb_type}.{func_name}' in cb_store:
-        store = cb_store['{cb_type}.{func_name}']
-        if {param_name} in store:
-            del store[{param_name}]
-    else:
-        store = _CBStore()
-        cb_store['{cb_type}.{func_name}'] = store
+    # Alias patch: allocate a fresh _CBStore per registration so every
+    # obj_add_event call gets its own slot.  The original code reused a single
+    # global slot keyed on cb_type+func_name, causing all registered callbacks
+    # to share one entry — only the last-registered handler would ever fire.
+    store = _CBStore()
+    if '_event_cb_stores' not in cb_store:
+        cb_store['_event_cb_stores'] = []
+    cb_store['_event_cb_stores'].append(store)
 
-    cb_store_handle = _lib_lvgl.ffi.new_handle(store)    
+    cb_store_handle = _lib_lvgl.ffi.new_handle(store)
     c_func = getattr(_lib_lvgl.lib, 'py_{full_cb_type}')
     store[{param_name}] = cb_store_handle
     store['{cb_type}'] = {param_name}
     store['{cb_type}.c_func'] = c_func
 
-    cb_store['{cb_type}.{func_name}'] = store
     {param_name} = c_func
-    
+
     cb_store['user_data'] = user_data
     user_data = cb_store_handle'''
 
