@@ -799,7 +799,7 @@ class _StructUnion(_AsArrayMixin, metaclass=_StructUnionMeta):
         self._obj = _lib_lvgl.ffi.new(self._c_type)
 
         for key, value in list(kwargs.items())[:]:
-            if value == _DefaultArg:
+            if value == _DefaultArg or value is None:
                 continue
 
             attr = getattr(self._obj, key)
