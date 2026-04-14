@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import keyword
 import os
 import sys
 from pycparser import c_generator  # NOQA
@@ -8,6 +9,13 @@ from . import utils
 
 
 generator = c_generator.CGenerator()
+
+
+def _safe_param_name(name):
+    """Return name with a trailing underscore if it clashes with a Python keyword."""
+    if name is not None and keyword.iskeyword(name):
+        return name + '_'
+    return name
 
 
 def get_py_type(name):
@@ -445,7 +453,7 @@ def {func_name}({params}) -> {ret_type}:{callback_code}
 
         for param in args:
             if isinstance(param, (Decl, Typename)):
-                param_name = param.name
+                param_name = _safe_param_name(param.name)
                 p_name, p_type, _ = param.gen_py()
             elif isinstance(param, EllipsisParam):
                 params.append('*args')
@@ -1053,7 +1061,7 @@ def __{func_name}_callback_func({params}):
 
                                 if isinstance(param, Typename):
                                     p_type = param.type
-                                    param_name = param.name
+                                    param_name = _safe_param_name(param.name)
 
                                     if isinstance(p_type, PtrDecl):
                                         p_type = p_type.type.type
@@ -1082,7 +1090,7 @@ def __{func_name}_callback_func({params}):
 
                                 elif isinstance(param, Decl):
                                     p_type = param.type
-                                    param_name = param.name
+                                    param_name = _safe_param_name(param.name)
 
                                     if isinstance(p_type, PtrDecl):
                                         p_type = p_type.type
