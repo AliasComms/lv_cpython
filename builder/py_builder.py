@@ -1013,7 +1013,7 @@ class RootTypedef(Typedef):
         '            _ud = {param_name}.user_data\n'
         '        except AttributeError:\n'
         '            _ct = _lib_lvgl.ffi.typeof({param_name}).cname\n'
-        '            _short = _ct.replace("struct lv_", "").replace(" *", "").removesuffix("_t")\n'
+        '            _short = _ct.replace("struct lv_", "").replace("lv_", "", 1).replace(" *", "").removesuffix("_t")\n'
         '            _getter = getattr(_lib_lvgl.lib, "lv_" + _short + "_get_user_data", None)\n'
         '            _ud = _getter({param_name}) if _getter else None\n'
         '        cb_store = _lib_lvgl.ffi.from_handle(_ud)'
