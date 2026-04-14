@@ -637,15 +637,15 @@ class Struct:
     @property
     def {field_name}(self) -> {field_type}:
         return self._get_field(
-            '{field_name}', 
+            '{c_field_name}',
             '{c_type}'
         )
 
     @{field_name}.setter
     def {field_name}(self, value: {field_type}):
         self._set_field(
-            '{field_name}', 
-            value, 
+            '{c_field_name}',
+            value,
             '{c_type}'
         )'''
 
@@ -696,7 +696,7 @@ class Struct:
             cb_store['{field_type}'] = value
             c_func = getattr(_lib_lvgl.lib, 'py_{full_field_type}')
             cb_store['{field_type}.c_func'] = c_func
-            self._obj.{field_name} = c_func
+            setattr(self._obj, '{c_field_name}', c_func)
         else:
             cb_store['{field_type}'] = value'''
 
@@ -740,6 +740,8 @@ class {struct_name}(_StructUnion): {nested_structs}
         for field in self.decls:
             if isinstance(field, Decl):
                 name, type_, code = field.gen_py()
+                # Alias patch: sanitize field names that are Python keywords
+                py_name = _safe_param_name(name)
                 full_field_type = None
 
                 if isinstance(field.type, PtrDecl):
@@ -760,12 +762,16 @@ class {struct_name}(_StructUnion): {nested_structs}
 
                         nested_structs.append(code)
                         # field_names.append(name)
-                        param_names.append(f'{name}={name}')
-                        params.append(f'{name}: Optional[_{name}] = None')
+                        if py_name != name:
+                            param_names.append(f"**{{'{name}': {py_name}}}")
+                        else:
+                            param_names.append(f'{name}={name}')
+                        params.append(f'{py_name}: Optional[_{name}] = None')
 
                         py_properties.append(
                             self.property_template.format(
-                                field_name=name,
+                                field_name=py_name,
+                                c_field_name=name,
                                 field_type=f'_{name}',
                                 c_type=''
                             )
@@ -793,7 +799,10 @@ class {struct_name}(_StructUnion): {nested_structs}
                     if '"' not in type_:
                         type_ = '"' + type_ + '"'
 
-                param_names.append(name + '=' + name)
+                if py_name != name:
+                    param_names.append(f"**{{'{name}': {py_name}}}")
+                else:
+                    param_names.append(name + '=' + name)
 
                 for item in ('_cb_t', '_f_t'):
                     if item not in type_:
@@ -801,7 +810,8 @@ class {struct_name}(_StructUnion): {nested_structs}
 
                     py_properties.append(
                         self.callback_property_template.format(
-                            field_name=name,
+                            field_name=py_name,
+                            c_field_name=name,
                             field_type=type_,
                             full_field_type=full_field_type
                         )
@@ -809,7 +819,7 @@ class {struct_name}(_StructUnion): {nested_structs}
 
                     params.append(
                         self.param_template.format(
-                            field_name=name,
+                            field_name=py_name,
                             field_type=type_
                         )
                     )
@@ -822,7 +832,8 @@ class {struct_name}(_StructUnion): {nested_structs}
                     else:
                         py_properties.append(
                             self.property_template.format(
-                                field_name=name,
+                                field_name=py_name,
+                                c_field_name=name,
                                 field_type=type_,
                                 c_type=type_.replace('"', '')
                                 if type_ != 'Any'
@@ -833,7 +844,7 @@ class {struct_name}(_StructUnion): {nested_structs}
                     if str(type_) == 'bool':
                         params.append(
                             self.bool_param_template.format(
-                                field_name=name,
+                                field_name=py_name,
                                 field_type=type_
                             )
                         )
@@ -841,7 +852,7 @@ class {struct_name}(_StructUnion): {nested_structs}
                     elif str(type_).replace('"', '') in int_types:
                         params.append(
                             self.int_param_template.format(
-                                field_name=name,
+                                field_name=py_name,
                                 field_type=type_
                             )
                         )
@@ -849,7 +860,7 @@ class {struct_name}(_StructUnion): {nested_structs}
 
                         params.append(
                             self.param_template.format(
-                                field_name=name,
+                                field_name=py_name,
                                 field_type=type_
                             )
                         )
