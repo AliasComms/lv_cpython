@@ -1343,18 +1343,55 @@ def __{func_name}_callback_func({params}):
                             # __init__ to skip ffi.new because opaque structs
                             # cannot be allocated — _obj is assigned externally
                             # by _get_py_obj after the C function returns.
+                            # Also add a user_data property so callback-storage
+                            # logic in generated set_*_cb helpers works:
+                            # it uses lv_{short}_get/set_user_data() C functions
+                            # instead of direct struct-field access (which would
+                            # fail for opaque types).
                             c_name = (
                                 'lv_' + type_[1:] if type_.startswith('_')
                                 else type_
                             )
+                            # lv_display_t → short = 'display'
+                            short = c_name[3:-2] if (
+                                c_name.startswith('lv_') and
+                                c_name.endswith('_t')
+                            ) else c_name
                             py_structs.append(
                                 'class {name}(_StructUnion):\n'
                                 '    _c_type = \'{c_type} *\'\n'
                                 '    def __init__(self, **kwargs):\n'
                                 '        pass  # opaque — allocated by C, not Python\n'
+                                '\n'
+                                '    @property\n'
+                                '    def user_data(self):\n'
+                                '        if \'__cb_store__\' not in self.__dict__:\n'
+                                '            try:\n'
+                                '                handle = _lib_lvgl.lib.lv_{short}_get_user_data(self._obj)\n'
+                                '                if handle == _lib_lvgl.ffi.NULL:\n'
+                                '                    raise Exception(\'null handle\')\n'
+                                '                cb_store = _lib_lvgl.ffi.from_handle(handle)\n'
+                                '            except:  # noqa\n'
+                                '                cb_store = _CBStore()\n'
+                                '                handle = _lib_lvgl.ffi.new_handle(cb_store)\n'
+                                '                _lib_lvgl.lib.lv_{short}_set_user_data(self._obj, handle)\n'
+                                '            self.__dict__[\'__cb_store__\'] = cb_store\n'
+                                '            self.__dict__[\'__cb_store_handle__\'] = handle\n'
+                                '        else:\n'
+                                '            cb_store = self.__dict__[\'__cb_store__\']\n'
+                                '        if \'user_data\' not in cb_store:\n'
+                                '            cb_store[\'user_data\'] = None\n'
+                                '        return cb_store[\'user_data\']\n'
+                                '\n'
+                                '    @user_data.setter\n'
+                                '    def user_data(self, value):\n'
+                                '        if \'__cb_store__\' not in self.__dict__:\n'
+                                '            _ = self.user_data\n'
+                                '        self.__dict__[\'__cb_store__\'][\'user_data\'] = value\n'
                                 '\n'.format(
                                     name=type_,
                                     c_type=c_name,
+                                    short=short,
                                 )
                             )
 
