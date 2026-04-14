@@ -1360,6 +1360,7 @@ def __{func_name}_callback_func({params}):
 
         elif isinstance(self.type, PtrDecl):
             if (
+                    code is not None and
                     name not in
                     py_type_names + py_callback_names +
                     py_typedef_names + py_struct_names +
