@@ -1338,15 +1338,23 @@ def __{func_name}_callback_func({params}):
                         )
                         if type_ not in all_known:
                             py_struct_names.append(type_)
+                            # Use the full C name (lv_display_t) as _c_type so
+                            # CFFI can resolve the pointer type. Also override
+                            # __init__ to skip ffi.new because opaque structs
+                            # cannot be allocated — _obj is assigned externally
+                            # by _get_py_obj after the C function returns.
+                            c_name = (
+                                'lv_' + type_[1:] if type_.startswith('_')
+                                else type_
+                            )
                             py_structs.append(
                                 'class {name}(_StructUnion):\n'
                                 '    _c_type = \'{c_type} *\'\n'
-                                '    pass\n'.format(
+                                '    def __init__(self, **kwargs):\n'
+                                '        pass  # opaque — allocated by C, not Python\n'
+                                '\n'.format(
                                     name=type_,
-                                    c_type=(
-                                        type_[1:] if type_.startswith('_')
-                                        else type_
-                                    )
+                                    c_type=c_name,
                                 )
                             )
 
