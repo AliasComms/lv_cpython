@@ -140,7 +140,10 @@ else:
 
 # some paths/files we do not need to compile the source files for.
 IGNORE_DIRS = (
-    'disp', 'arm2d', 'gd32_ipa', 'nxp', 'stm32_dma2d', 'swm341_dma2d'
+    'disp', 'arm2d', 'gd32_ipa', 'nxp', 'stm32_dma2d', 'swm341_dma2d',
+    # multilang demo assets include "lvgl/lvgl.h" which is not on the include
+    # path; the demo is not needed for the Python bindings.
+    'multilang',
 )
 IGNORE_FILES = ()
 
