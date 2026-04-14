@@ -1478,7 +1478,12 @@ class {name}({type}):
                             py_enums.append(code)
                         return
                     else:
-                        raise RuntimeError
+                        # Alias patch: newer LVGL has anonymous enums with no
+                        # resolvable type; fall back to int_ instead of crashing.
+                        code = code.format(type='int_')
+                        if _check_code(code):
+                            py_enums.append(code)
+                        return
 
                 if name and type_ and name != type_:
                     if name not in py_int_type_names:
