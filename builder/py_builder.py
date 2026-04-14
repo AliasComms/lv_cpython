@@ -758,7 +758,18 @@ class {struct_name}(_StructUnion): {nested_structs}
                             )
                         )
 
-                        code = code.replace(name, f'_{name}')
+                        # Alias patch: for anonymous inline unions/structs
+                        # (type_ is None) rename the class to _{field_name}
+                        # so the param annotation resolves in the class scope.
+                        # For named unions/structs (type_ is not None, e.g.
+                        # union _lv_anim_path_para_t) the class already has
+                        # its own name — use that directly to avoid referencing
+                        # an undefined identifier.
+                        if type_ is None:
+                            code = code.replace(name, f'_{name}')
+                            inner_type = f'_{name}'
+                        else:
+                            inner_type = type_
 
                         nested_structs.append(code)
                         # field_names.append(name)
@@ -766,13 +777,13 @@ class {struct_name}(_StructUnion): {nested_structs}
                             param_names.append(f"**{{'{name}': {py_name}}}")
                         else:
                             param_names.append(f'{name}={name}')
-                        params.append(f'{py_name}: Optional[_{name}] = None')
+                        params.append(f'{py_name}: Optional[{inner_type}] = None')
 
                         py_properties.append(
                             self.property_template.format(
                                 field_name=py_name,
                                 c_field_name=name,
-                                field_type=f'_{name}',
+                                field_type=inner_type,
                                 c_type=''
                             )
                         )
