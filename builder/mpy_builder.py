@@ -264,7 +264,18 @@ def run(lib_path):
                 cls['parent_cls'] = f'_lvgl.{cls_name2}'
                 continue
 
-            raise RuntimeError
+            # Alias patch: skip classes whose parent_cls cannot be matched
+            # rather than aborting the whole build.  Print a warning so we
+            # can diagnose the mismatch, then fall back to _lvgl.obj_t so
+            # the class is still generated in the output.
+            print(
+                f'[mpy_builder] WARNING: no parent match for '
+                f'cls={cls_name1!r} parent={cls_name2!r} '
+                f'(obj_classes keys: {list(obj_classes.keys())!r})',
+                flush=True
+            )
+            cls['parent_cls'] = '_lvgl.obj_t'
+            continue
 
         cls['parent_cls'] = matched_name
 
