@@ -1005,15 +1005,18 @@ class RootTypedef(Typedef):
     # {param_name}.user_data fails because CFFI can't access fields on opaque
     # structs via direct attribute access.  Fall back to the dedicated C getter
     # function (lv_{short}_get_user_data) when direct access raises AttributeError.
+    #
+    # The string is substituted at 8-space indent (inside outer try:), so
+    # continuation lines carry 8 or 12 spaces of absolute indentation.
     struct_userdata_template = (
         'try:\n'
-        '        _ud = {param_name}.user_data\n'
-        '    except AttributeError:\n'
-        '        _ct = _lib_lvgl.ffi.typeof({param_name}).cname  # e.g. "struct lv_indev_t *"\n'
-        '        _short = _ct.replace("struct lv_", "").replace(" *", "").removesuffix("_t")\n'
-        '        _getter = getattr(_lib_lvgl.lib, "lv_" + _short + "_get_user_data", None)\n'
-        '        _ud = _getter({param_name}) if _getter else None\n'
-        '    cb_store = _lib_lvgl.ffi.from_handle(_ud)'
+        '            _ud = {param_name}.user_data\n'
+        '        except AttributeError:\n'
+        '            _ct = _lib_lvgl.ffi.typeof({param_name}).cname\n'
+        '            _short = _ct.replace("struct lv_", "").replace(" *", "").removesuffix("_t")\n'
+        '            _getter = getattr(_lib_lvgl.lib, "lv_" + _short + "_get_user_data", None)\n'
+        '            _ud = _getter({param_name}) if _getter else None\n'
+        '        cb_store = _lib_lvgl.ffi.from_handle(_ud)'
     )
     arg_user_data_template = 'cb_store = _lib_lvgl.ffi.from_handle(user_data)'
 
