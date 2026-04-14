@@ -1275,7 +1275,14 @@ def __{func_name}_callback_func({params}):
             if type_:
                 type_ = type_.replace('"', '')
 
-            if code and '_lib_lvgl.lib.' in code and 'LV_' in code:
+            # Alias patch: also catch enum typedefs whose values lack the LV_
+            # prefix (e.g. lv_font_fmt_rle_state_t uses RLE_STATE_SINGLE not
+            # LV_FONT_FMT_RLE_STATE_SINGLE).  The original guard required 'LV_'
+            # in the generated code but that misses such enums, leaving the type
+            # class undefined and causing a NameError at import time.
+            if code and '_lib_lvgl.lib.' in code and (
+                'LV_' in code or (name and type_ and name == type_)
+            ):
                 if name and type_ and name == type_:
                     type_ = 'int_'
 
