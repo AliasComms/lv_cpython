@@ -455,6 +455,7 @@ def {func_name}({params}) -> {ret_type}:{callback_code}
             if isinstance(param, (Decl, Typename)):
                 param_name = _safe_param_name(param.name)
                 p_name, p_type, _ = param.gen_py()
+                p_name = _safe_param_name(p_name)
             elif isinstance(param, EllipsisParam):
                 params.append('*args')
                 param_names.append('*args')
