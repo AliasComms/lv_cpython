@@ -1149,6 +1149,11 @@ def __{func_name}_callback_func({params}):
                                 if p_ptr and param_type in ('None', None):
                                     param_type = 'Any'
 
+                                # Alias patch: anonymous C params (no name) get
+                                # a generated name so the Python signature is valid.
+                                if param_name is None:
+                                    param_name = '_p{}'.format(len(param_names))
+
                                 param_types.append(param_type)
                                 param_names.append(param_name)
                                 params.append(
