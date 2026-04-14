@@ -878,7 +878,7 @@
  ====================*/
 
 /*Show some widget. It might be required to increase `LV_MEM_SIZE` */
-#define LV_USE_DEMO_WIDGETS 0
+#define LV_USE_DEMO_WIDGETS 1  /* Alias patch: must match the CFFI cdef (lv_demo_widgets appears in lv_demos.h) */
 #if LV_USE_DEMO_WIDGETS
     #define LV_DEMO_WIDGETS_SLIDESHOW 0
 #endif
