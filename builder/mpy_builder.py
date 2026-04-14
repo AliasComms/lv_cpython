@@ -260,14 +260,14 @@ def run(lib_path):
                 matched_name = cls_name3
 
         if not matched_name:
-            if get_common_name(cls_name1, cls_name2):
-                cls['parent_cls'] = f'_lvgl.{cls_name2}'
-                continue
-
-            raise RuntimeError(
-                f'[mpy_builder] no parent match: '
-                f'cls={cls_name1!r} parent={cls_name2!r}'
-            )
+            # No sibling class in obj_classes shares a prefix with the parent
+            # type. Fall back to referencing the parent type directly from the
+            # lvgl module (e.g. draw_layer → _lvgl.layer_t).  This covers
+            # LVGL v9 cases like lv_draw_layer_create whose parent type
+            # (lv_layer_t) exists as a struct but has no _create function of
+            # its own and therefore no entry in obj_classes.
+            cls['parent_cls'] = f'_lvgl.{cls_name2}'
+            continue
 
         cls['parent_cls'] = matched_name
 
