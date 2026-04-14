@@ -1324,6 +1324,32 @@ def __{func_name}_callback_func({params}):
                         py_int_types.append(tdef)
 
                     else:
+                        # Alias patch: if the base type (e.g. _display_t) is
+                        # not defined anywhere (opaque struct — definition lives
+                        # in a private header that pycparser never sees), emit a
+                        # placeholder class in py_structs so that the typedef
+                        # alias class (class display_t(_display_t)) can extend
+                        # it without a NameError at import time.
+                        all_known = (
+                            py_struct_names +
+                            py_int_type_names +
+                            py_typedef_names +
+                            py_callback_names
+                        )
+                        if type_ not in all_known:
+                            py_struct_names.append(type_)
+                            py_structs.append(
+                                'class {name}(_StructUnion):\n'
+                                '    _c_type = \'{c_type} *\'\n'
+                                '    pass\n'.format(
+                                    name=type_,
+                                    c_type=(
+                                        type_[1:] if type_.startswith('_')
+                                        else type_
+                                    )
+                                )
+                            )
+
                         if t_name not in py_typedef_names:
                             tdef = self.template.format(
                                 typedef_name=t_name,
